@@ -127,24 +127,19 @@ Write-Host "Installing VapourSynth..."
 
 Write-Host "Installing vsrife requirements..."
 
-& "$TargetFolder\python.exe" "-m" "pip" "install" "pillow" "fastrlock" "setuptools" "wheel" "nvidia_stub" "hatchling" "--upgrade" "--no-warn-script-location"
 
-& "$TargetFolder\python.exe" "-m" "pip" "install" `
-	"https://download.pytorch.org/whl/nightly/cu124/torch-2.6.0.dev20241017%2Bcu124-cp312-cp312-win_amd64.whl" `
-	"https://download.pytorch.org/whl/nightly/cu124/torchvision-0.20.0.dev20241018%2Bcu124-cp312-cp312-win_amd64.whl" `
-	"https://download.pytorch.org/whl/nightly/cu124/torch_tensorrt-2.6.0.dev20241018%2Bcu124-cp312-cp312-win_amd64.whl" `
-	"https://pypi.nvidia.com/tensorrt/tensorrt-10.0.0b6-py2.py3-none-win_amd64.whl" `
-	"https://pypi.nvidia.com/nvidia-cuda-runtime-cu12/nvidia_cuda_runtime_cu12-12.6.77-py3-none-win_amd64.whl" `
-	"cupy-cuda12x" `
-	"tensorrt-cu12==10.3.0" `
-	"tensorrt-cu12-bindings==10.3.0" `
-	"tensorrt-cu12-libs==10.3.0" `
-	"--upgrade" "--no-deps" "--no-warn-script-location"
+& "$TargetFolder\python.exe" "-m" "pip" "install" "-U" "packaging" "setuptools" "wheel" "--no-warn-script-location"
+
+& "$TargetFolder\python.exe" "-m" "pip" "install" "--pre" "-U" "torch" "torchvision" "--index-url" "https://download.pytorch.org/whl/nightly/cu126" "--no-warn-script-location"
+
+& "$TargetFolder\python.exe" "-m" "pip" "install" "--no-deps" "--pre" "-U" "torch_tensorrt" "--index-url" "https://download.pytorch.org/whl/nightly/cu126" "--no-warn-script-location"
+
+& "$TargetFolder\python.exe" "-m" "pip" "install" "--no-deps" "-U" "tensorrt-cu12" "tensorrt-cu12_bindings" "tensorrt-cu12_libs" "--extra-index-url" "https://pypi.nvidia.com" "--no-warn-script-location"
 
 
 Write-Host "Installing vsrife..."
 
-& "$TargetFolder\python.exe" "-m" "pip" "install" "https://github.com/HolyWu/vs-rife/archive/refs/heads/master.zip" "--upgrade" "--no-warn-script-location"
+& "$TargetFolder\python.exe" "-m" "pip" "install" "-U" "vsrife" "--no-warn-script-location"
 & "$TargetFolder\python.exe" "-m" "vsrife"
 
 Write-Host "Downloading mpv..."
@@ -158,8 +153,6 @@ Write-Host "Extracting bestsource..."
 & "$TargetFolder\7z.exe" "e" "-y" "$DownloadFolder\bestsource.7z" "-o$TargetFolder\vs-plugins" | Out-Null
 
 
-Write-Host "Extracting Python..."
-
 Write-Host "Testing vsrife..."
 
 $Script = @'
@@ -168,7 +161,7 @@ core = vs.core
 from vsrife import rife
 
 clip = clip = core.std.BlankClip(width=1920, height=1080, format=vs.RGBH, length=30 * 24)
-clip = rife(clip, model='4.6', factor_num=2, trt=True, num_streams=2, trt_optimization_level=3)
+clip = rife(clip, model='4.7', trt=True, trt_optimization_level=3)
 clip = core.resize.Point(clip, format=vs.YUV420P16, matrix_s='709', range_s='limited')
 clip.set_output()
 '@
@@ -189,7 +182,7 @@ clip = video_in
 
 clip = core.resize.Bilinear(clip, format=vs.RGBH, matrix_in_s='709', range_in_s='limited')
 
-clip = rife(clip, model='4.6', factor_num=2, trt=True, num_streams=2, trt_optimization_level=3)
+clip = rife(clip, model='4.7', factor_num=2, trt=True, trt_optimization_level=3)
 
 clip = core.resize.Point(clip, format=vs.YUV420P8, matrix_s='709', range_s='limited')
 
@@ -204,7 +197,7 @@ New-Item -Path "$TargetFolder\portable_config" -ItemType Directory -Force | Out-
 $MpvConfig = @'
 vf=vapoursynth=~~home/mpv_vsrife.vpy:4:8
 
-video-sync = audio
+video-sync = display-resample
 vo = gpu-next
 hwdec = no
 gpu-api = d3d11
